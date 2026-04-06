@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Data Nilai Siswa</title>
+
+<style>
+/* ===============================
+   RESET & FONT
+================================= */
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+/* ===============================
+   BACKGROUND HALAMAN
+================================= */
+body{
+    background:linear-gradient(135deg,#4e73df,#1cc88a);
+    padding:30px;
+}
+
+/* ===============================
+   CONTAINER UTAMA
+================================= */
+.container{
+    max-width:1100px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.2);
+}
+
+h2{
+    text-align:center;
+    margin-bottom:20px;
+    color:#4e73df;
+}
+
+/* ===============================
+   FORM INPUT
+================================= */
+.form-group{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:15px;
+}
+
+.form-group input{
+    flex:1;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ddd;
+}
+
+button{
+    padding:10px 15px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+/* WARNA TOMBOL */
+.btn-primary{ background:#4e73df; color:white;}
+.btn-warning{ background:#f6c23e;}
+.btn-danger{ background:#e74a3b; color:white;}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+/* ===============================
+   SEARCH BOX
+================================= */
+.search-box{
+    margin:15px 0;
+}
+
+.search-box input{
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+
+/* ===============================
+   TABLE STYLE
+================================= */
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:#4e73df;
+    color:white;
+}
+
+th,td{
+    padding:12px;
+    text-align:center;
+}
+
+tbody tr:nth-child(even){
+    background:#f8f9fc;
+}
+
+/* BADGE NILAI */
+.badge{
+    padding:5px 10px;
+    border-radius:20px;
+    color:white;
+    font-size:12px;
+}
+
+.badge-a{ background:#1cc88a;}
+.badge-b{ background:#f6c23e; color:black;}
+.badge-c{ background:#e74a3b;}
+
+/* ===============================
+   STATISTIK
+================================= */
+.stats{
+    margin-top:20px;
+    padding:15px;
+    background:#f8f9fc;
+    border-radius:10px;
+    display:flex;
+    justify-content:space-between;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>📚 Sistem Data Nilai Siswa</h2>
+
+<!-- FORM INPUT DATA -->
+<div class="form-group">
+    <input type="text" id="nama" placeholder="Nama">
+    <input type="text" id="kelas" placeholder="Kelas">
+    <input type="number" id="nilai" placeholder="Nilai (0-100)">
+    <button class="btn-primary" onclick="simpan()" id="btnSimpan">Simpan</button>
+</div>
+
+<!-- FITUR PENCARIAN -->
+<div class="search-box">
+    <input type="text" id="search" placeholder="🔍 Cari siswa..." onkeyup="tampil()">
+</div>
+
+<!-- TABEL DATA -->
+<table>
+<thead>
+<tr>
+    <th>Nama</th>
+    <th>Kelas</th>
+    <th>Nilai</th>
+    <th>Rata-rata</th>
+    <th>Aksi</th>
+</tr>
+</thead>
+<tbody id="data"></tbody>
+</table>
+
+<!-- STATISTIK -->
+<div class="stats">
+    <div>Total Siswa: <b id="total">0</b></div>
+    <div>Rata-rata Keseluruhan: <b id="rataAll">0</b></div>
+</div>
+
+</div>
+
+<script>
+
+/* ==========================================
+   MENYIMPAN DATA SISWA KE LOCAL STORAGE
+========================================== */
+
+// Ambil data dari localStorage jika ada
+let siswa = JSON.parse(localStorage.getItem("siswa")) || [];
+
+// Menyimpan index saat edit
+let indexEdit = null;
+
+
+/* ==========================================
+   FUNGSI MENENTUKAN GRADE
+========================================== */
+function getGrade(n){
+    if(n>=85) return '<span class="badge badge-a">A</span>';
+    if(n>=70) return '<span class="badge badge-b">B</span>';
+    return '<span class="badge badge-c">C</span>';
+}
+
+
+/* ==========================================
+   FUNGSI MENAMPILKAN DATA
+========================================== */
+function tampil(){
+    const tbody=document.getElementById("data");
+    const search=document.getElementById("search").value.toLowerCase();
+
+    tbody.innerHTML="";
+    let totalNilai=0;
+
+    siswa.forEach((s,i)=>{
+
+        // FILTER PENCARIAN
+        if(s.nama.toLowerCase().includes(search)){
+
+            totalNilai+=parseFloat(s.nilai);
+
+            tbody.innerHTML+=`
+            <tr>
+                <td>${s.nama}</td>
+                <td>${s.kelas}</td>
+                <td>${s.nilai} ${getGrade(parseFloat(s.nilai))}</td>
+                <td>${parseFloat(s.nilai).toFixed(2)}</td>
+                <td>
+                    <button class="btn-warning" onclick="edit(${i})">Edit</button>
+                    <button class="btn-danger" onclick="hapus(${i})">Hapus</button>
+                </td>
+            </tr>`;
+        }
+    });
+
+    // TAMPILKAN TOTAL SISWA
+    document.getElementById("total").innerText=siswa.length;
+
+    // HITUNG RATA-RATA KESELURUHAN
+    document.getElementById("rataAll").innerText=
+        siswa.length?(totalNilai/siswa.length).toFixed(2):0;
+
+    // SIMPAN KE LOCAL STORAGE
+    localStorage.setItem("siswa",JSON.stringify(siswa));
+}
+
+
+/* ==========================================
+   FUNGSI SIMPAN / UPDATE DATA
+========================================== */
+function simpan(){
+
+    const nama=document.getElementById("nama").value.trim();
+    const kelas=document.getElementById("kelas").value.trim();
+    const nilai=parseFloat(document.getElementById("nilai").value);
+
+    // VALIDASI INPUT KOSONG
+    if(!nama||!kelas||isNaN(nilai)){
+        alert("Semua data wajib diisi!");
+        return;
+    }
+
+    // VALIDASI NILAI 0-100
+    if(nilai<0 || nilai>100){
+        alert("Nilai harus antara 0 - 100!");
+        return;
+    }
+
+    if(indexEdit===null){
+        siswa.push({nama,kelas,nilai});
+    }else{
+        siswa[indexEdit]={nama,kelas,nilai};
+        indexEdit=null;
+        document.getElementById("btnSimpan").innerText="Simpan";
+    }
+
+    // RESET FORM
+    document.getElementById("nama").value="";
+    document.getElementById("kelas").value="";
+    document.getElementById("nilai").value="";
+
+    tampil();
+}
+
+
+/* ==========================================
+   FUNGSI EDIT DATA
+========================================== */
+function edit(i){
+    document.getElementById("nama").value=siswa[i].nama;
+    document.getElementById("kelas").value=siswa[i].kelas;
+    document.getElementById("nilai").value=siswa[i].nilai;
+
+    indexEdit=i;
+    document.getElementById("btnSimpan").innerText="Update";
+}
+
+
+/* ==========================================
+   FUNGSI HAPUS DATA
+========================================== */
+function hapus(i){
+    if(confirm("Hapus data ini?")){
+        siswa.splice(i,1);
+        tampil();
+    }
+}
+
+// Panggil tampil saat pertama kali halaman dibuka
+tampil();
+
+</script>
+
+</body>
+</html>
